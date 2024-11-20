@@ -1,119 +1,144 @@
-import React, { useEffect, useState } from 'react'
-import '../Styles/Hero.css'
-import Ticket from './Ticket'
-import axios from 'axios'
+import React, { useEffect, useState } from "react";
+import "../Styles/Hero.css";
+import Ticket from "./Ticket";
+import axios from "axios";
+import { useData } from "../context/dataContext";
 
-export default function Hero () {
-  const [ticket, setTicket] = useState([])
+export default function Hero() {
+  const { groupByKey, orderByKey } = useData();
+  const [ticket, setTicket] = useState([]);
   let config = {
-    method: 'get',
+    method: "get",
     maxBodyLength: Infinity,
-    url: 'https://api.quicksell.co/v1/internal/frontend-assignment',
-    headers: {}
-  }
+    url: "https://api.quicksell.co/v1/internal/frontend-assignment",
+    headers: {},
+  };
   useEffect(() => {
     axios
       .request(config)
-      .then(response => {
-        console.log(JSON.stringify(response?.data.tickets))
-        setTicket(response.data.tickets)
-      })
-      .catch(error => {
-        console.log(error)
-      })
-  }, [])
+      .then((response) => {
+        //console.log(JSON.stringify(response?.data.tickets))
+        console.log(response?.data?.tickets);
 
-  const groupByPriority = tickets => {
-    const grouped = []
-    tickets.map(ticket => {
-      const priority = ticket.priority
+        setTicket(response.data.tickets);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }, []);
+
+  const groupByPriority = (tickets) => {
+    const grouped = [];
+    tickets.map((ticket) => {
+      const priority = ticket.priority;
 
       // Ensure the index for the current priority exists
       if (!grouped[priority]) {
-        grouped[priority] = []
+        grouped[priority] = [];
       }
 
       // Push the ticket to the corresponding priority group
-      grouped[priority].push(ticket)
-    })
+      grouped[priority].push(ticket);
+    });
 
-    return grouped
-  }
+    return grouped;
+  };
 
-  var groupedTickets = groupByPriority(ticket)
-  console.log(groupedTickets)
+  var groupedTickets = groupByPriority(ticket);
+  //console.log(groupedTickets)
   // Group tickets by their status
-  const groupByStatus = tickets => {
+  const groupByStatus = (tickets) => {
     // Create a map to store tickets grouped by status
-    const statusMap = {}
+    const statusMap = {};
 
     // Iterate through each ticket
-    tickets.forEach(ticket => {
-      const { status } = ticket
+    tickets.forEach((ticket) => {
+      const { status } = ticket;
 
       // Initialize the array if the status key doesn't exist
       if (!statusMap[status]) {
-        statusMap[status] = []
+        statusMap[status] = [];
       }
 
       // Add the ticket to the corresponding status group
-      statusMap[status].push(ticket)
-    })
+      statusMap[status].push(ticket);
+    });
 
     // Convert the map values to an array of arrays
-    return Object.values(statusMap)
-  }
+    return Object.values(statusMap);
+  };
 
-  groupedTickets = groupByStatus(ticket)
+  groupedTickets = groupByStatus(ticket);
 
-  console.log(groupedTickets)
+  //console.log(groupedTickets)
   // Group tickets by their assigned userId
-  const groupByUsers = tickets => {
+  const groupByUsers = (tickets) => {
     // Create a map to store tickets grouped by userId
-    const userMap = {}
+    const userMap = {};
 
     // Iterate through each ticket
-    tickets.forEach(ticket => {
-      const { userId } = ticket
+    tickets.forEach((ticket) => {
+      const { userId } = ticket;
 
       // Initialize the array if the userId key doesn't exist
       if (!userMap[userId]) {
-        userMap[userId] = []
+        userMap[userId] = [];
       }
 
       // Add the ticket to the corresponding user group
-      userMap[userId].push(ticket)
-    })
+      userMap[userId].push(ticket);
+    });
 
     // Convert the map values to an array of arrays
-    return Object.values(userMap)
-  }
+    return Object.values(userMap);
+  };
 
-  const groupedByUsers = groupByUsers(ticket)
+  const groupedByUsers = groupByUsers(ticket);
 
-  console.log(groupedByUsers)
-  const sortGroupedTicketsByPriority = groupedTickets => {
+  //console.log(groupedByUsers)
+  const sortGroupedTicketsByPriority = (groupedTickets) => {
     return groupedTickets.map(
-      group => group.sort((a, b) => b.priority - a.priority) // Sort in descending order
-    )
-  }
-  const sortedGroupedByUsers = sortGroupedTicketsByPriority(groupedByUsers)
+      (group) => group.sort((a, b) => b.priority - a.priority) // Sort in descending order
+    );
+  };
+  const sortedGroupedByUsers = sortGroupedTicketsByPriority(groupedByUsers);
 
-  console.log(sortedGroupedByUsers)
+  //console.log(sortedGroupedByUsers)
 
   // Sort each grouped array by title alphabetically
-  const sortGroupedTicketsByTitle = groupedTickets => {
+  const sortGroupedTicketsByTitle = (groupedTickets) => {
     return groupedTickets.map(
-      group => group.sort((a, b) => a.title.localeCompare(b.title)) // Sort alphabetically by title
-    )
+      (group) => group.sort((a, b) => a.title.localeCompare(b.title)) // Sort alphabetically by title
+    );
+  };
+  const sortedGroupedByTitle = sortGroupedTicketsByTitle(groupedByUsers);
+  //console.log(sortedGroupedByTitle)
+  function manageGrouping() {
+    switch (groupByKey) {
+      case "priority":
+        return groupByPriority(ticket);
+      case "user":
+        return groupByUsers(ticket);
+      default:
+        return groupByStatus(ticket);
+    }
   }
-  const sortedGroupedByTitle = sortGroupedTicketsByTitle(groupedByUsers)
-  console.log(sortedGroupedByTitle)
+  function manageOrdering(data) {
+    switch (orderByKey) {
+      case "title":
+        return sortGroupedTicketsByTitle(data);
+      default:
+        return sortGroupedTicketsByPriority(data);
+    }
+  }
+  function display() {
+    return manageOrdering(manageGrouping());
+  }
   return (
-    <div className='hero'>
-      {groupedTickets.map(ticketArray => {
-        return <Ticket key={ticketArray[0].id} ticketArray={ticketArray} />
+    <div className="hero">
+      {display().map((ticketArray) => {
+        return <Ticket key={ticketArray[0].id} ticketArray={ticketArray} />;
       })}
     </div>
-  )
+  );
 }
